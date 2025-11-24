@@ -1,0 +1,95 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, isnan, when
+import pandas as pd
+import matplotlib.pyplot as plt
+
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/hdpena/DSC650FInalProject/refs/heads/main/wine_dataset.csv"
+APP_NAME = "wine_dataset.csv"
+
+# ========= INITIALIZE SPARK =========
+spark = (
+    SparkSession.builder
+    .appName(APP_NAME)
+    # add any configs you want here (cores, memory, etc.)
+    .getOrCreate()
+)
+
+print(f"Spark version: {spark.version}")
+
+
+df = (
+    spark.read
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .csv(GITHUB_RAW_URL)
+)
+
+
+print("\n=== Spark DataFrame Schema ===")
+df.printSchema()
+
+print("\n=== First 10 Rows ===")
+df.show(10, truncate=False)
+
+print("\n=== Row Count ===")
+print(df.count())
+
+# ========= BASIC SPARK EDA =========
+
+# 1. Summary stats for all numeric columns
+print("\n=== Summary Statistics (Numeric Columns) ===")
+df.describe().show()
+
+# 2. Missing values per column
+print("\n=== Missing Values Per Column ===")
+missing_df = df.select([
+    count(
+        when(col(c).isNull() | isnan(c), c)
+    ).alias(c)
+    for c in df.columns
+])
+missing_df.show()
+
+# value counts for a categorical column
+CATEGORICAL_COL = "alcohol"  
+
+if CATEGORICAL_COL in df.columns:
+    print(f"\n=== Value Counts for {CATEGORICAL_COL} ===")
+    (
+        df.groupBy(CATEGORICAL_COL)
+        .count()
+        .orderBy(col("count").desc())
+        .show()
+    )
+else:
+    print(f"\n[INFO] Categorical column '{CATEGORICAL_COL}' not found. Skipping value counts.")
+
+# PANDAS + MATPLOTLIB EDA 
+
+print("\nConverting to pandas DataFrame for plotting (sampled if large)...")
+
+# sample of data
+SAMPLE_FRACTION = 0.1  # 10% sample – adjust as needed
+df_sample = df.sample(withReplacement=False, fraction=SAMPLE_FRACTION, seed=42)
+pdf = df_sample.toPandas()
+
+print(f"Pandas sample shape: {pdf.shape}")
+
+# histogram on a numeric column
+NUMERIC_COL = "<replace_with_numeric_column_name>"  # e.g. "price", "age"
+
+if NUMERIC_COL in pdf.columns:
+    plt.figure()
+    pdf[NUMERIC_COL].dropna().hist(bins=30)
+    plt.title(f"Histogram of {NUMERIC_COL}")
+    plt.xlabel(NUMERIC_COL)
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.show()
+else:
+    print(f"[INFO] Numeric column '{NUMERIC_COL}' not found. Skipping histogram.")
+
+# ========= CLEANUP =========
+# Stop Spark session when done
+spark.stop()
+print("\nSpark session stopped.")
