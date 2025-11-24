@@ -6,11 +6,10 @@ import matplotlib.pyplot as plt
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/hdpena/DSC650FInalProject/refs/heads/main/wine_dataset.csv"
 APP_NAME = "wine_dataset.csv"
 
-# ========= INITIALIZE SPARK =========
+# INITIALIZE SPARK 
 spark = (
     SparkSession.builder
     .appName(APP_NAME)
-    # add any configs you want here (cores, memory, etc.)
     .getOrCreate()
 )
 
@@ -34,7 +33,7 @@ df.show(10, truncate=False)
 print("\n=== Row Count ===")
 print(df.count())
 
-# ========= BASIC SPARK EDA =========
+# BASIC SPARK EDA 
 
 # 1. Summary stats for all numeric columns
 print("\n=== Summary Statistics (Numeric Columns) ===")
@@ -69,14 +68,14 @@ else:
 print("\nConverting to pandas DataFrame for plotting (sampled if large)...")
 
 # sample of data
-SAMPLE_FRACTION = 0.1  # 10% sample – adjust as needed
+SAMPLE_FRACTION = 0.1  # 10% sample
 df_sample = df.sample(withReplacement=False, fraction=SAMPLE_FRACTION, seed=42)
 pdf = df_sample.toPandas()
 
 print(f"Pandas sample shape: {pdf.shape}")
 
 # histogram on a numeric column
-NUMERIC_COL = "<replace_with_numeric_column_name>"  # e.g. "price", "age"
+NUMERIC_COL = "<hue>" 
 
 if NUMERIC_COL in pdf.columns:
     plt.figure()
@@ -89,7 +88,6 @@ if NUMERIC_COL in pdf.columns:
 else:
     print(f"[INFO] Numeric column '{NUMERIC_COL}' not found. Skipping histogram.")
 
-# ========= CLEANUP =========
 # Stop Spark session when done
 spark.stop()
 print("\nSpark session stopped.")
